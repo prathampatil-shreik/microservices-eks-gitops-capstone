@@ -29,6 +29,9 @@ spec:
     targetRevision: main
     path: helm/microtask
     helm:
+      # releaseName must match the existing Helm release to preserve immutable selectors
+      # on existing Deployments and StatefulSet (app.kubernetes.io/instance label)
+      releaseName: microtask
       # Use the EKS dev values file — this file is updated by CI with new image tags
       valueFiles:
         - values-eks-dev.yaml
