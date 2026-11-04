@@ -1,0 +1,22 @@
+{{- if .Values.mysql.enabled }}
+# In-cluster ClusterIP Service for MySQL (development only).
+# Pods connect using DNS name "mysql" within the same namespace.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "microtask.labels" . | nindent 4 }}
+    app.kubernetes.io/name: mysql
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: mysql
+      port: {{ .Values.mysql.port }}
+      targetPort: mysql
+      protocol: TCP
+{{- end }}

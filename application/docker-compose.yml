@@ -1,0 +1,156 @@
+# MicroTask — Docker Compose
+# Starts all four services: mysql, api, worker, frontend
+# Usage: docker compose up --build
+# The app will be available at http://localhost:3000
+
+services:
+
+  # ── MySQL 8.0 ──────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: microtask-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-microtask_db}
+      MYSQL_USER: ${MYSQL_USER:-microtask_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-microtask_pass}
+    ports:
+      - "3307:3306"   # Mapped to 3307 on host to avoid conflicts with local MySQL installs
+    volumes:
+      - mysql_data:/var/lib/mysql   # Persistent storage so data survives restarts
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - microtask-net
+
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: microtask-api:latest
+    container_name: microtask-api
+    restart: unless-stopped
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-microtask_db}
+      MYSQL_USER: ${MYSQL_USER:-microtask_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-microtask_pass}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEBUG: ${DEBUG:-false}
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:5173,http://frontend:80"
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - microtask-net
+
+  # ── Database migrations (runs once, then exits) ────────────────────────────
+  # This service runs Alembic migrations before the worker starts.
+  # It exits with code 0 on success; Docker Compose does not restart it.
+  migrate:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: microtask-api:latest
+    container_name: microtask-migrate
+    restart: "no"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-microtask_db}
+      MYSQL_USER: ${MYSQL_USER:-microtask_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-microtask_pass}
+    command:
+      - sh
+      - -c
+      - |
+        echo 'Waiting for MySQL to be ready...'
+        for i in $(seq 1 30); do
+          python -c "import pymysql; pymysql.connect(host='mysql', port=3306, user='$${MYSQL_USER}', password='$${MYSQL_PASSWORD}', database='$${MYSQL_DATABASE}')" 2>/dev/null && break
+          echo "Attempt $$i/30 — MySQL not ready yet, retrying in 3s..."
+          sleep 3
+        done
+        echo 'Running Alembic migrations...'
+        alembic upgrade head
+        echo 'Migrations complete'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - microtask-net
+
+  # ── Background Worker ──────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    image: microtask-worker:latest
+    container_name: microtask-worker
+    restart: unless-stopped
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-microtask_db}
+      MYSQL_USER: ${MYSQL_USER:-microtask_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-microtask_pass}
+      WORKER_NAME: ${WORKER_NAME:-worker-1}
+      POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-5}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-15}
+      MIN_PROCESSING_SECONDS: ${MIN_PROCESSING_SECONDS:-2}
+      MAX_PROCESSING_SECONDS: ${MAX_PROCESSING_SECONDS:-8}
+      FAILURE_RATE: ${FAILURE_RATE:-0.1}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - microtask-net
+
+  # ── React Frontend ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: microtask-frontend:latest
+    container_name: microtask-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"   # Access the app at http://localhost:3000
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - microtask-net
+
+# ── Volumes ────────────────────────────────────────────────────────────────────
+volumes:
+  mysql_data:
+    driver: local
+
+# ── Networks ───────────────────────────────────────────────────────────────────
+networks:
+  microtask-net:
+    driver: bridge

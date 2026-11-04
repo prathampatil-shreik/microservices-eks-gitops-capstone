@@ -1,0 +1,13 @@
+apiVersion: v2
+name: microtask
+description: MicroTask — Microservices Task Management Platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - microtask
+  - fastapi
+  - react
+  - mysql
+maintainers:
+  - name: MicroTask Team

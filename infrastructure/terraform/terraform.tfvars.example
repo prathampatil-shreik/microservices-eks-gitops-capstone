@@ -1,0 +1,38 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in your values.
+# terraform.tfvars is listed in .gitignore and must NEVER be committed.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+
+# ── Project ────────────────────────────────────────────────────────────────────
+project_name = "microtask"
+environment  = "dev"
+
+# ── AWS ────────────────────────────────────────────────────────────────────────
+aws_region = "us-east-1"
+
+# ── Networking ─────────────────────────────────────────────────────────────────
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+
+# true  = 1 NAT Gateway  (~$32/month) — use for learning/dev
+# false = 1 NAT per AZ   (~$64/month) — use for production
+single_nat_gateway = true
+
+# ── EKS ────────────────────────────────────────────────────────────────────────
+cluster_name       = "microtask-eks-dev"
+kubernetes_version = "1.36"
+
+# t3.medium = 2 vCPU, 4GB RAM, ~$30/month per node
+node_instance_type = "t3.medium"
+node_desired_size  = 2
+node_min_size      = 2
+node_max_size      = 2
+node_disk_size     = 20
+
+# ── EKS API Endpoint Access ────────────────────────────────────────────────────
+# Restrict the public EKS API endpoint to your own IP address.
+# Find your IP: curl https://checkip.amazonaws.com
+# Replace YOUR_PUBLIC_IP with the address returned by that command.
+cluster_endpoint_public_access_cidrs = ["YOUR_PUBLIC_IP/32"]

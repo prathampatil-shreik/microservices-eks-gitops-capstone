@@ -1,0 +1,105 @@
+# MicroTask Helm Chart — Shared Default Values
+# These are safe defaults. Environment-specific files (values-dev.yaml, values-prod.yaml)
+# override only what differs. Passwords are NEVER stored here.
+
+# ── In-cluster MySQL ───────────────────────────────────────────────────────────
+# enabled: true  → deploy MySQL StatefulSet + PVC + Service + Secret (development)
+# enabled: false → skip all in-cluster MySQL resources; use external RDS (production)
+mysql:
+  enabled: true
+  image: mysql:8.0
+  port: 3306
+  storage:
+    size: 2Gi
+    storageClass: "standard"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+# ── Database connection ────────────────────────────────────────────────────────
+# Development: host is the in-cluster Service name "mysql"
+# Production:  host is the RDS endpoint (set in values-prod.yaml)
+# Credentials always come from a Kubernetes Secret referenced by secretName.
+db:
+  host: "mysql"
+  port: 3306
+  name: "microtask_db"
+  user: "microtask_user"
+  # Name of the Kubernetes Secret that holds the database password.
+  # Dev:  "mysql-secret"  (created by this chart from values — see mysql-secret.yaml)
+  # Prod: "microtask-db-secret" (created by External Secrets Operator from AWS Secrets Manager)
+  secretName: "mysql-secret"
+  # Key inside the Secret that holds the password value
+  passwordKey: "password"
+  # Key inside the Secret that holds the username value (used by ESO secret in prod)
+  usernameKey: "username"
+  # Key inside the Secret that holds the database name
+  databaseKey: "database"
+
+# ── API ────────────────────────────────────────────────────────────────────────
+api:
+  image:
+    repository: microtask-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8000
+  logLevel: "INFO"
+  debug: "false"
+  corsOrigins: "http://localhost:3000,http://localhost:5173"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# ── Worker ─────────────────────────────────────────────────────────────────────
+worker:
+  image:
+    repository: microtask-worker
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  workerName: "worker-1"
+  pollIntervalSeconds: "5"
+  heartbeatIntervalSeconds: "15"
+  minProcessingSeconds: "2"
+  maxProcessingSeconds: "8"
+  failureRate: "0.1"
+  maxRetries: "3"
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+# ── Frontend ───────────────────────────────────────────────────────────────────
+frontend:
+  image:
+    repository: microtask-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 80
+  # Service type: NodePort for Minikube, LoadBalancer for EKS
+  serviceType: NodePort
+  nodePort: 30080
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "32Mi"
+    limits:
+      cpu: "100m"
+      memory: "64Mi"
+
+# ── Migration Job ──────────────────────────────────────────────────────────────
+migration:
+  backoffLimit: 5

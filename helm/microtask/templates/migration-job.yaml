@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: microtask-migrate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "microtask.labels" . | nindent 4 }}
+    app.kubernetes.io/name: migrate
+spec:
+  backoffLimit: {{ .Values.migration.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: migrate
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: {{ include "microtask.image" .Values.api.image }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              echo 'Waiting for database to accept connections...'
+              for i in $(seq 1 40); do
+                python -c "
+              import pymysql, os, sys
+              try:
+                  pymysql.connect(
+                      host=os.environ['MYSQL_HOST'],
+                      port=int(os.environ['MYSQL_PORT']),
+                      user=os.environ['MYSQL_USER'],
+                      password=os.environ['MYSQL_PASSWORD'],
+                      database=os.environ['MYSQL_DATABASE'],
+                      connect_timeout=3
+                  )
+                  sys.exit(0)
+              except Exception:
+                  sys.exit(1)
+              " && break
+                echo "Attempt $i/40 — DB not ready, retrying in 3s..."
+                sleep 3
+              done
+              echo 'Running Alembic migrations...'
+              alembic upgrade head
+              echo 'Migrations complete.'
+          env:
+            - name: MYSQL_HOST
+              value: {{ include "microtask.dbHost" . | quote }}
+            - name: MYSQL_PORT
+              value: {{ .Values.db.port | quote }}
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.secretName }}
+                  key: {{ .Values.db.databaseKey }}
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.secretName }}
+                  key: {{ .Values.db.usernameKey }}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.secretName }}
+                  key: {{ .Values.db.passwordKey }}

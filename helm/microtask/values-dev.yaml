@@ -1,0 +1,47 @@
+# values-dev.yaml — Minikube / local development overrides
+# Usage: helm upgrade --install microtask ./helm/microtask -n microtask -f helm/microtask/values-dev.yaml
+# Only values that differ from values.yaml are listed here.
+
+# In-cluster MySQL is enabled for development
+mysql:
+  enabled: true
+  storage:
+    size: 1Gi
+    storageClass: "standard"   # Minikube built-in StorageClass
+
+# Database host is the in-cluster Service name
+db:
+  host: "mysql"
+  port: 3306
+  name: "microtask_db"
+  user: "microtask_user"
+  secretName: "mysql-secret"
+  passwordKey: "password"
+  usernameKey: "username"
+  databaseKey: "database"
+
+api:
+  image:
+    repository: microtask-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  logLevel: "INFO"
+  corsOrigins: "http://localhost:3000,http://localhost:5173,http://localhost:8000"
+
+worker:
+  image:
+    repository: microtask-worker
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  failureRate: "0.1"
+
+frontend:
+  image:
+    repository: microtask-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  serviceType: NodePort
+  nodePort: 30080
