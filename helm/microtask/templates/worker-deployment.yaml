@@ -1,3 +1,4 @@
+{{- if .Values.components.worker }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,6 +13,14 @@ spec:
     matchLabels:
       app.kubernetes.io/name: worker
       app.kubernetes.io/instance: {{ .Release.Name }}
+  # RollingUpdate: replace one pod at a time so processing is never interrupted.
+  # maxSurge: 1 allows one extra pod during rollout.
+  # maxUnavailable: 1 allows one pod to be down during rollout.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   template:
     metadata:
       labels:
@@ -70,7 +79,21 @@ spec:
               value: {{ .Values.worker.failureRate | quote }}
             - name: MAX_RETRIES
               value: {{ .Values.worker.maxRetries | quote }}
-          # exec liveness — worker has no HTTP server, check the script file exists
+          # Readiness: verify the worker script is present AND the Python runtime
+          # can import the worker module. The pod is only marked Ready once this
+          # passes, preventing traffic routing before the worker is initialised.
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import worker; import config; import database"
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          # Liveness: confirm the process is still alive. A simpler check than
+          # readiness — just verify the worker.py file is accessible.
           livenessProbe:
             exec:
               command:
@@ -88,3 +111,4 @@ spec:
             limits:
               cpu: {{ .Values.worker.resources.limits.cpu }}
               memory: {{ .Values.worker.resources.limits.memory }}
+{{- end }}

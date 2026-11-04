@@ -1,0 +1,24 @@
+# gitops/dev/values-override.yaml
+#
+# This file is managed by the CI/CD pipeline.
+# The pipeline updates image tags here after every successful build on main.
+# Argo CD reads values-eks-dev.yaml from helm/microtask/ directly —
+# this file documents the last known deployed state for reference.
+#
+# DO NOT edit image tags manually. They are set by the CI workflow.
+#
+# Last updated by: CI pipeline
+# To see current deployed tags, check helm/microtask/values-eks-dev.yaml
+
+# Current image tags (mirrors values-eks-dev.yaml)
+api:
+  image:
+    tag: api-c5ac4c9
+
+worker:
+  image:
+    tag: worker-c5ac4c9
+
+frontend:
+  image:
+    tag: frontend-c5ac4c9

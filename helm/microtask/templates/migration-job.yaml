@@ -1,3 +1,4 @@
+{{- if .Values.components.migration }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -66,3 +67,4 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.db.secretName }}
                   key: {{ .Values.db.passwordKey }}
+{{- end }}

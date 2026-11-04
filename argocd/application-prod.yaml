@@ -1,0 +1,55 @@
+# ============================================================
+# Argo CD Application — Production Environment
+#
+# Sync policy: MANUAL — production changes require a reviewed
+# pull request to values-prod.yaml. Argo CD will show "OutOfSync"
+# but will NOT apply changes until a human clicks "Sync" in the UI
+# or runs `argocd app sync microtask-prod`.
+#
+# This is the correct GitOps pattern for production:
+#   1. Developer opens PR updating values-prod.yaml (new image tag)
+#   2. PR is reviewed and merged to main
+#   3. Argo CD detects the change and shows OutOfSync
+#   4. Operator reviews the diff in Argo CD UI
+#   5. Operator approves and syncs
+#
+# Apply with:
+#   kubectl apply -f argocd/application-prod.yaml -n argocd
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microtask-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/prathampatil-shreik/microservices-eks-gitops-capstone.git
+    # Production always deploys from a pinned release tag, not main.
+    # Update this to the release tag when promoting to production.
+    targetRevision: main
+    path: helm/microtask
+    helm:
+      valueFiles:
+        - values-prod.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: microtask-prod
+
+  syncPolicy:
+    # NO automated sync for production.
+    # Changes are applied only after explicit human approval.
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 2
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

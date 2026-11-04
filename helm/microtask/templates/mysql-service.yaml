@@ -1,4 +1,4 @@
-{{- if .Values.mysql.enabled }}
+{{- if and .Values.components.mysql .Values.mysql.enabled }}
 # In-cluster ClusterIP Service for MySQL (development only).
 # Pods connect using DNS name "mysql" within the same namespace.
 apiVersion: v1

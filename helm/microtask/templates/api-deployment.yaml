@@ -1,3 +1,4 @@
+{{- if .Values.components.api }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,6 +9,14 @@ metadata:
     app.kubernetes.io/name: api
 spec:
   replicas: {{ .Values.api.replicas }}
+  # RollingUpdate: ensures zero downtime during deploys.
+  # maxUnavailable: 1 allows one pod to be replaced at a time.
+  # maxSurge: 1 allows one extra pod to be created during rollout.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: api
@@ -89,3 +98,4 @@ spec:
             limits:
               cpu: {{ .Values.api.resources.limits.cpu }}
               memory: {{ .Values.api.resources.limits.memory }}
+{{- end }}

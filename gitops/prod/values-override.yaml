@@ -1,0 +1,32 @@
+# gitops/prod/values-override.yaml
+#
+# Production image tags are promoted manually via pull request.
+# Steps to promote a build to production:
+#
+#   1. Identify the image tag from a successful dev deployment.
+#      Example: api-a1b2c3d
+#
+#   2. Open a pull request updating helm/microtask/values-prod.yaml
+#      with the new image tags.
+#
+#   3. Get the PR reviewed and approved.
+#
+#   4. Merge the PR to main.
+#
+#   5. Argo CD (microtask-prod) will show OutOfSync.
+#
+#   6. An operator reviews the diff in Argo CD UI and clicks Sync,
+#      or runs: argocd app sync microtask-prod
+#
+# Current production image tags (update via PR only):
+api:
+  image:
+    tag: "REPLACE_WITH_PROMOTED_TAG"
+
+worker:
+  image:
+    tag: "REPLACE_WITH_PROMOTED_TAG"
+
+frontend:
+  image:
+    tag: "REPLACE_WITH_PROMOTED_TAG"

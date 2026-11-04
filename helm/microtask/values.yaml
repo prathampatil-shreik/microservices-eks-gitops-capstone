@@ -5,6 +5,14 @@
 # ── In-cluster MySQL ───────────────────────────────────────────────────────────
 # enabled: true  → deploy MySQL StatefulSet + PVC + Service + Secret (development)
 # enabled: false → skip all in-cluster MySQL resources; use external RDS (production)
+components:
+  mysql: true
+  api: false
+  worker: false
+  frontend: false
+  migration: false
+
+
 mysql:
   enabled: true
   image: mysql:8.0

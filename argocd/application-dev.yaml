@@ -1,0 +1,56 @@
+# ============================================================
+# Argo CD Application — Dev Environment
+#
+# This Application tells Argo CD to watch the Helm chart in Git
+# and automatically sync any changes to the microtask-eks-dev cluster.
+#
+# Sync policy: automated — Argo CD syncs immediately when Git changes.
+# This is appropriate for dev where fast iteration is the priority.
+#
+# Apply with:
+#   kubectl apply -f argocd/application-dev.yaml -n argocd
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microtask-dev
+  namespace: argocd
+  # Finalizer ensures Argo CD cleans up resources when this Application is deleted.
+  # Remove this finalizer if you want to delete the Application without deleting
+  # the deployed Kubernetes resources.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    # Replace with your actual GitHub repository URL
+    repoURL: https://github.com/prathampatil-shreik/microservices-eks-gitops-capstone.git
+    targetRevision: main
+    path: helm/microtask
+    helm:
+      # Use the EKS dev values file — this file is updated by CI with new image tags
+      valueFiles:
+        - values-eks-dev.yaml
+
+  destination:
+    # In-cluster deployment (Argo CD running in the same cluster)
+    server: https://kubernetes.default.svc
+    namespace: microtask
+
+  syncPolicy:
+    # automated: Argo CD polls Git every 3 minutes and syncs automatically.
+    # This is the GitOps loop: Git commit → Argo CD detects → applies to cluster.
+    automated:
+      prune: true      # Remove resources that are no longer in Git
+      selfHeal: true   # Revert manual kubectl changes back to Git state
+    syncOptions:
+      - CreateNamespace=true        # Create the microtask namespace if it doesn't exist
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true              # Delete old resources after new ones are healthy
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

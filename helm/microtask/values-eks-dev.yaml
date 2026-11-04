@@ -1,0 +1,98 @@
+
+# EKS Development Environment
+# AWS Region: us-east-1
+# ECR Repository: microtask-app
+# Git Commit: c5ac4c9
+
+# Stage-based deployment flags.
+# All components are active for the full EKS dev deployment.
+# Set migration: true only when running schema migrations (then set back to false).
+components:
+  mysql: true
+  api: true
+  worker: true
+  frontend: true
+  migration: false
+
+mysql:
+  enabled: true
+  image: mysql:8.0
+  port: 3306
+  storage:
+    size: 5Gi
+    storageClass: gp3
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+db:
+  host: mysql
+  port: 3306
+  name: microtask_db
+  user: microtask_user
+  secretName: mysql-secret
+  passwordKey: password
+  usernameKey: username
+  databaseKey: database
+
+api:
+  image:
+    repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
+    tag: api-c5ac4c9
+    pullPolicy: Always
+  replicas: 1
+  port: 8000
+  logLevel: INFO
+  debug: "false"
+  corsOrigins: "*"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+worker:
+  image:
+    repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
+    tag: worker-c5ac4c9
+    pullPolicy: Always
+  replicas: 1
+  workerName: worker-1
+  pollIntervalSeconds: "5"
+  heartbeatIntervalSeconds: "15"
+  minProcessingSeconds: "2"
+  maxProcessingSeconds: "8"
+  failureRate: "0.1"
+  maxRetries: "3"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+frontend:
+  image:
+    repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
+    tag: frontend-c5ac4c9
+    pullPolicy: Always
+  replicas: 1
+  port: 80
+  serviceType: ClusterIP
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+migration:
+  backoffLimit: 5

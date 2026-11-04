@@ -7,6 +7,16 @@
 #     pulling credentials from AWS Secrets Manager. It must exist before install.
 #   - Image tags must be pinned — never use "latest" in production.
 
+# Component flags for production.
+# mysql: false — production uses Amazon RDS, no in-cluster MySQL.
+# migration: false — migrations are run as a separate controlled step, never on every deploy.
+components:
+  mysql: false
+  api: true
+  worker: true
+  frontend: true
+  migration: false
+
 # Disable in-cluster MySQL — production uses Amazon RDS
 mysql:
   enabled: false
@@ -62,8 +72,8 @@ frontend:
     tag: "1.0.0"
     pullPolicy: Always
   replicas: 2
-  # LoadBalancer provisions an AWS ALB/NLB automatically on EKS
-  serviceType: LoadBalancer
+  # ClusterIP: external traffic enters through ALB Ingress, not directly to this Service.
+  serviceType: ClusterIP
   resources:
     requests:
       cpu: "100m"
