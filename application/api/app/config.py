@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        # Ignore environment variables that are not declared as fields.
+        # This is required because the same environment may contain worker
+        # variables (WORKER_NAME, FAILURE_RATE, etc.) that belong to the
+        # worker service, not the API. Pydantic v2 defaults to 'forbid'.
+        extra = "ignore"
 
 
 @lru_cache()
