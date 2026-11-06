@@ -1,4 +1,4 @@
-{{- if .Values.components.worker }}
+﻿{{- if .Values.components.worker }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,12 +15,12 @@ spec:
       app.kubernetes.io/instance: {{ .Release.Name }}
   # RollingUpdate: replace one pod at a time so processing is never interrupted.
   # maxSurge: 1 allows one extra pod during rollout.
-  # maxUnavailable: 1 allows one pod to be down during rollout.
+  # maxUnavailable: 0 allows one pod to be down during rollout.
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
-      maxUnavailable: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -93,7 +93,7 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 3
           # Liveness: confirm the process is still alive. A simpler check than
-          # readiness — just verify the worker.py file is accessible.
+          # readiness â€” just verify the worker.py file is accessible.
           livenessProbe:
             exec:
               command:
@@ -112,3 +112,5 @@ spec:
               cpu: {{ .Values.worker.resources.limits.cpu }}
               memory: {{ .Values.worker.resources.limits.memory }}
 {{- end }}
+
+
