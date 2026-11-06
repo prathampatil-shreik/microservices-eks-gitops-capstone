@@ -31,5 +31,13 @@ terraform {
       source  = "hashicorp/http"
       version = "~> 3.4"
     }
+
+    # Random provider — generates the application DB password
+    # The result is stored in terraform.tfstate (excluded from Git by .gitignore).
+    # Protect local state with Windows file permissions and encrypted backups.
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 }

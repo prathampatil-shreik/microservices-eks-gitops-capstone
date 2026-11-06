@@ -81,3 +81,41 @@ module "ebs_csi_driver" {
 
   depends_on = [module.eks]
 }
+
+# ── RDS Module ─────────────────────────────────────────────────────────────────
+# Provisions a production MySQL 8.0 RDS instance in the existing VPC.
+# - Placed in private subnets (same as EKS nodes, no public access).
+# - Dedicated security group allows port 3306 from EKS worker nodes only.
+# - Master password managed by Amazon RDS + Secrets Manager (no plaintext).
+# - Single-AZ, db.t3.micro for cost efficiency in this capstone environment.
+# - Deletion protection enabled; must be disabled before terraform destroy.
+module "rds" {
+  source = "./modules/rds"
+
+  name_prefix                = local.name_prefix
+  vpc_id                     = module.vpc.vpc_id
+  private_subnet_ids         = module.vpc.private_subnet_ids
+  eks_node_security_group_id = module.eks.node_security_group_id
+
+  depends_on = [module.vpc]
+}
+
+# ── External Secrets Operator — IRSA ──────────────────────────────────────────
+# Creates the IAM role and least-privilege policy that allow the ESO service
+# account (external-secrets/external-secrets) to call GetSecretValue and
+# DescribeSecret on the RDS master secret only.
+#
+# OIDC values come from the existing EKS module outputs — nothing is hardcoded.
+# The RDS secret ARN comes from the existing RDS module output.
+#
+# This module does NOT annotate the service account. That step is intentionally
+# deferred so the role ARN can be reviewed before it is applied.
+module "external_secrets_iam" {
+  source = "./modules/external-secrets-iam"
+
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.oidc_provider_url
+  rds_secret_arn    = module.rds.db_secret_arn
+
+  depends_on = [module.eks, module.rds]
+}

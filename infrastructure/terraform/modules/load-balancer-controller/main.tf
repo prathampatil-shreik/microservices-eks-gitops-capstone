@@ -18,7 +18,7 @@
 # The official AWS-provided policy for the Load Balancer Controller.
 # v2.13.x is the current release line compatible with Kubernetes 1.29–1.36.
 data "http" "lbc_iam_policy" {
-  url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.13.1/docs/install/iam_policy.json"
+  url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.14.0/docs/install/iam_policy.json"
 }
 
 resource "aws_iam_policy" "lbc" {

@@ -39,3 +39,8 @@ Thumbs.db
 .terraform/
 .terraform.lock.hcl
 terraform.tfvars
+
+# Helm rendered output — build artifacts, not source
+prod-rendered.yaml
+migration-job-prod.yaml
+*.tfplan

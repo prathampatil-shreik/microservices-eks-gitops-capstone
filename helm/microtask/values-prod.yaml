@@ -23,10 +23,10 @@ mysql:
 
 # External RDS connection details (no password — comes from ESO Secret)
 db:
-  host: "microtask-db.REPLACE_WITH_RDS_ENDPOINT.rds.amazonaws.com"
+  host: "microtask-prod-mysql.cqpia4w42h8l.us-east-1.rds.amazonaws.com"
   port: 3306
   name: "microtask_db"
-  user: "microtask_user"
+  user: "microtask_app"
   # This Secret is created by External Secrets Operator from AWS Secrets Manager.
   # It must be present in the namespace before helm install/upgrade.
   secretName: "microtask-db-secret"
@@ -36,13 +36,13 @@ db:
 
 api:
   image:
-    repository: REPLACE_WITH_ECR_ACCOUNT_ID.dkr.ecr.REPLACE_WITH_REGION.amazonaws.com/microtask-api
-    tag: "1.0.0"
+    repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
+    tag: "api-b639884"
     pullPolicy: Always
   replicas: 2
   logLevel: "WARNING"
   debug: "false"
-  corsOrigins: "https://REPLACE_WITH_YOUR_DOMAIN"
+  corsOrigins: ""
   resources:
     requests:
       cpu: "200m"
@@ -53,8 +53,8 @@ api:
 
 worker:
   image:
-    repository: REPLACE_WITH_ECR_ACCOUNT_ID.dkr.ecr.REPLACE_WITH_REGION.amazonaws.com/microtask-worker
-    tag: "1.0.0"
+    repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
+    tag: "worker-b639884"
     pullPolicy: Always
   replicas: 1
   failureRate: "0.1"
@@ -68,8 +68,8 @@ worker:
 
 frontend:
   image:
-    repository: REPLACE_WITH_ECR_ACCOUNT_ID.dkr.ecr.REPLACE_WITH_REGION.amazonaws.com/microtask-frontend
-    tag: "1.0.0"
+    repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
+    tag: "frontend-b639884"
     pullPolicy: Always
   replicas: 2
   # ClusterIP: external traffic enters through ALB Ingress, not directly to this Service.

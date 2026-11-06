@@ -97,3 +97,47 @@ output "aws_account_id" {
   description = "AWS account ID where the infrastructure is deployed."
   value       = data.aws_caller_identity.current.account_id
 }
+
+# ── RDS ───────────────────────────────────────────────────────────────────────────
+
+output "rds_endpoint" {
+  description = "RDS instance hostname. Use this in application database connection strings."
+  value       = module.rds.db_endpoint
+}
+
+output "rds_port" {
+  description = "RDS MySQL port (3306)."
+  value       = module.rds.db_port
+}
+
+output "rds_db_name" {
+  description = "Database name inside the RDS instance."
+  value       = module.rds.db_name
+}
+
+output "rds_identifier" {
+  description = "RDS instance identifier."
+  value       = module.rds.db_identifier
+}
+
+output "rds_secret_arn" {
+  description = "Secrets Manager ARN holding the RDS master credentials. Retrieve the password at runtime using this ARN — never print it."
+  value       = module.rds.db_secret_arn
+}
+
+output "rds_security_group_id" {
+  description = "Security group ID attached to the RDS instance."
+  value       = module.rds.rds_security_group_id
+}
+
+# ── External Secrets Operator — IRSA ──────────────────────────────────────────
+
+output "external_secrets_role_arn" {
+  description = "IAM role ARN for the ESO service account. Annotate the external-secrets service account with this ARN to activate IRSA."
+  value       = module.external_secrets_iam.role_arn
+}
+
+output "app_db_secret_arn" {
+  description = "ARN of the application DB secret in Secrets Manager. Pass to the ESO ExternalSecret resource. The secret value is never output."
+  value       = module.external_secrets_iam.app_secret_arn
+}
