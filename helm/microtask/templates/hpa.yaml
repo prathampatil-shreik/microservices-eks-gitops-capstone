@@ -1,0 +1,59 @@
+{{- $apiAutoscaling := .Values.api.autoscaling | default dict }}
+{{- $frontendAutoscaling := .Values.frontend.autoscaling | default dict }}
+
+{{- if and .Values.components.api ($apiAutoscaling.enabled | default false) }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "microtask.labels" . | nindent 4 }}
+    app.kubernetes.io/name: api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: {{ $apiAutoscaling.minReplicas }}
+  maxReplicas: {{ $apiAutoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $apiAutoscaling.targetCPUUtilizationPercentage }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+{{- end }}
+
+{{- if and .Values.components.frontend ($frontendAutoscaling.enabled | default false) }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "microtask.labels" . | nindent 4 }}
+    app.kubernetes.io/name: frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: {{ $frontendAutoscaling.minReplicas }}
+  maxReplicas: {{ $frontendAutoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $frontendAutoscaling.targetCPUUtilizationPercentage }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+{{- end }}

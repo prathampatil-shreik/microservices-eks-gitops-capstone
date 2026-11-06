@@ -1,3 +1,4 @@
+
 # ============================================================
 # Argo CD Application — Production Environment
 #
@@ -13,16 +14,25 @@
 #   4. Operator reviews the diff in Argo CD UI
 #   5. Operator approves and syncs
 #
+# HPA configuration:
+#   - API and frontend replica counts are managed by HPA.
+#   - Argo CD ignores differences in Deployment replicas.
+#   - RespectIgnoreDifferences prevents Argo CD from overwriting
+#     HPA-managed replica counts during synchronization.
+#
 # Apply with:
 #   kubectl apply -f argocd/application-prod.yaml -n argocd
 # ============================================================
+
 apiVersion: argoproj.io/v1alpha1
 kind: Application
+
 metadata:
   name: microtask-prod
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+
 spec:
   project: default
 
@@ -40,6 +50,22 @@ spec:
     server: https://kubernetes.default.svc
     namespace: microtask-prod
 
+  # Ignore replica differences managed by Horizontal Pod Autoscaler.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: api
+      namespace: microtask-prod
+      jsonPointers:
+        - /spec/replicas
+
+    - group: apps
+      kind: Deployment
+      name: frontend
+      namespace: microtask-prod
+      jsonPointers:
+        - /spec/replicas
+
   syncPolicy:
     # NO automated sync for production.
     # Changes are applied only after explicit human approval.
@@ -47,6 +73,8 @@ spec:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
+      - RespectIgnoreDifferences=true
+
     retry:
       limit: 2
       backoff:

@@ -1,15 +1,7 @@
-# values-prod.yaml — AWS EKS production overrides
-# Usage: helm upgrade --install microtask ./helm/microtask -n production -f helm/microtask/values-prod.yaml
-#
-# SECURITY RULES:
-#   - No passwords are stored in this file.
-#   - The Secret "microtask-db-secret" is created by External Secrets Operator
-#     pulling credentials from AWS Secrets Manager. It must exist before install.
-#   - Image tags must be pinned — never use "latest" in production.
 
-# Component flags for production.
-# mysql: false — production uses Amazon RDS, no in-cluster MySQL.
-# migration: false — migrations are run as a separate controlled step, never on every deploy.
+# values-prod.yaml — AWS EKS production overrides
+# Production uses Amazon RDS and AWS Secrets Manager.
+
 components:
   mysql: false
   api: true
@@ -17,18 +9,14 @@ components:
   frontend: true
   migration: false
 
-# Disable in-cluster MySQL — production uses Amazon RDS
 mysql:
   enabled: false
 
-# External RDS connection details (no password — comes from ESO Secret)
 db:
   host: "microtask-prod-mysql.cqpia4w42h8l.us-east-1.rds.amazonaws.com"
   port: 3306
   name: "microtask_db"
   user: "microtask_app"
-  # This Secret is created by External Secrets Operator from AWS Secrets Manager.
-  # It must be present in the namespace before helm install/upgrade.
   secretName: "microtask-db-secret"
   passwordKey: "password"
   usernameKey: "username"
@@ -43,6 +31,11 @@ api:
   logLevel: "WARNING"
   debug: "false"
   corsOrigins: ""
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 60
   resources:
     requests:
       cpu: "200m"
@@ -72,8 +65,12 @@ frontend:
     tag: "frontend-b639884"
     pullPolicy: Always
   replicas: 2
-  # ClusterIP: external traffic enters through ALB Ingress, not directly to this Service.
   serviceType: ClusterIP
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 60
   resources:
     requests:
       cpu: "100m"
