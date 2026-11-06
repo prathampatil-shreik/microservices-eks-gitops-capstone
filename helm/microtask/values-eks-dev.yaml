@@ -42,7 +42,7 @@ db:
 api:
   image:
     repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
-    tag: api-b3db80d
+    tag: api-cb7dce0
     pullPolicy: Always
   replicas: 1
   port: 8000
@@ -60,7 +60,7 @@ api:
 worker:
   image:
     repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
-    tag: worker-b3db80d
+    tag: worker-cb7dce0
     pullPolicy: Always
   replicas: 1
   workerName: worker-1
@@ -81,7 +81,7 @@ worker:
 frontend:
   image:
     repository: 893677555033.dkr.ecr.us-east-1.amazonaws.com/microtask-app
-    tag: frontend-b3db80d
+    tag: frontend-cb7dce0
     pullPolicy: Always
   replicas: 1
   port: 80
