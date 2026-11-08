@@ -1,7 +1,4 @@
 
-# values-prod.yaml — AWS EKS production overrides
-# Production uses Amazon RDS and AWS Secrets Manager.
-
 components:
   mysql: false
   api: true
@@ -81,3 +78,13 @@ frontend:
 
 migration:
   backoffLimit: 3
+
+# Production promotion record
+promotion:
+  environment: production
+  sourceBranch: develop
+  imageBuild: b639884
+  promotedImages:
+    api: api-b639884
+    worker: worker-b639884
+    frontend: frontend-b639884

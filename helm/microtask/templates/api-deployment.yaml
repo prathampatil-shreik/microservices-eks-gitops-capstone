@@ -26,6 +26,8 @@ spec:
       labels:
         app.kubernetes.io/name: api
         app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        gitops-demo: "p3-09-dev-auto-sync-2026-11-07"
     spec:
       initContainers:
         - name: wait-for-db
@@ -99,5 +101,3 @@ spec:
               cpu: {{ .Values.api.resources.limits.cpu }}
               memory: {{ .Values.api.resources.limits.memory }}
 {{- end }}
-
-
